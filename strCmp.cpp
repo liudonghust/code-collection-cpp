@@ -2,29 +2,22 @@
 #include <string>
 using namespace std;
 
-string upperCase(string& s){
-	char *buf = new char[s.length()]; //create char[] to meet the arg of toupper()
-	s.copy(buf, s.length());
-	for (int i = 0; i < s.length(); i++)
-		buf[i] = toupper(buf[i]);   //toupper()'s argument must be char
-	string r(buf, s.length());
-	delete buf;
-	return r;
-}
-
-string lowerCase(string& s){
-	char *buf = new char[s.length()]; 
-	s.copy(buf, s.length());
-	for (int i = 0; i < s.length(); i++)
-		buf[i] = tolower(buf[i]);   
-	string r(buf, s.length());
-	delete buf;
-	return r;
+int stringCmp(string& str1, string& str2){
+	string::const_iterator sb1 = str1.begin();
+	string::const_iterator sb2 = str2.begin();
+	string::const_iterator se1 = str1.end();
+	string::const_iterator se2 = str2.end();
+	while (sb1 != se1 && sb2 != se2){
+		if (toupper(*sb1) != toupper(*sb2))
+			return toupper(*sb1) < toupper(*sb2) ? -1 : 1;
+		sb1++;
+		sb2++;
+	}
+	return (str1.size() - str2.size());
 }
 
 int main(){
 	string str1("abcDef");
-	string str2("AbcdEF");
-	if (upperCase(str1) == upperCase(str2))
-		cout << "str1 is equal to str2 with case insentive" << endl;
+	string str2("AbcdEFGH");
+	cout << stringCmp(str1, str2) << endl;
 }
