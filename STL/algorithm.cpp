@@ -79,18 +79,42 @@ pair<_FwdIt, _FwdIt> minmax_element(_FwdIt first, _FwdIt last)
 	return minmax_element(first, last, less<>());
 }
 
-/* one time one element , so 2*(numElem -1) times compare */
+/* one time two element ,
+1. compare these two elements 
+2. compare the miner with result.first; maxer with second
+so (1 + 2) * (numElem - 1) / 2 times compare
+*/
 template<typename FowIt, typename _Pr> inline
 pair<FowIt, FowIt> minmax_element(FowIt first, FowIt last, _Pr _Pred)
 {
 	pair<FowIt, FowIt> result{ first, first };
 	if (first == last) return result;       // empty range
 	if (++first == last) return result;     // one element range
-	for (; first != last; ++first){         
-		if (_Pred(*first, *(result.first)))
-			result.first = first;
-		else if (!_Pred(*first, *(result.second)))
-			result.second = first;
+	// two elements range
+	if (_Pred(*first, *result.first))
+		result.first = first;
+	else
+		resul.second = first;
+	// one time two elements: first, next
+	while(++first != last){
+		FowIt next = first;
+		if ( ++next == last)  // only one element(first) left
+			if(_Pred(*first, *(result.first)))
+				result.first = first;
+			else(!(_Pred(*first, *result.second)))
+				result.second = first;
+		else{
+			if(_Pred(*first, *next))     // first < next
+				if(_Pred(*first, *result.first))
+					result.first = first;
+				else if(!(_Pred(*next, *result.second)))
+					result.second = next;
+			else
+				if(_Pred(*next, *result.first))
+					result.first = next;
+				else if(!(_Pred(*first, *result.second)))
+					result.second = first;
+		}
 	}
 	return result;
 }
