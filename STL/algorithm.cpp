@@ -597,3 +597,36 @@ void iota(_FwdIt first, _FwdIt last, const T startVal)
 	for(; first != last; ++first)
 		*first = startVal++;
 }
+
+template<typename _FwdIt, typename T> inline
+void replace(_FwdIt first, _FwdIt last, const T& oldVal, const T& newVal)
+{
+	for(; first != last && *first == oldVal; ++first)
+		*first = newVal;
+}
+
+template<typename _FwdIt, typename _Pr, typename T> inline
+void replace_if(_FwdIt first, _FwdIt last, _Pr _Pred, const T& newVal)
+{
+	for(; first != last; ++first)
+		if(_Pred(*first))
+			*first = newVal;
+}
+
+template<typename _FwdIt, typename _OutIt, typename T> inline
+_OutIt replace_copy(_FwdIt first, _FwdIt last, _OutIt destFirst, const T& oldVal, const T& newVal)
+{
+	for(; first != last; ++first){
+		*destFirst++ = (*first == oldVal) ? newVal : *first;
+	}
+	return destFirst;
+}
+
+template<typename _FwdIt, typename _OutIt, typename _Pr typename T> inline
+_OutIt replace_copy(_FwdIt first, _FwdIt last, _OutIt destFirst, _Pr _Pred, const T& newVal)
+{
+	for(; first != last; ++first){
+		*destFirst++ = _Pred(*first) ? newVal : *first;
+	}
+	return destFirst;
+}
