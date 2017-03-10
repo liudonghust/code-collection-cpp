@@ -8,6 +8,7 @@ _InIt:  input iterator type
 _FwdIt: Forward iterator type
 _Fn1:   Unary function type
 _Pr:    predicate operation
+_Comp:  compare function
 */
 
 template <typename _InIt, typename T> inline
@@ -32,6 +33,17 @@ count_if(_InIt first, _InIt last, _Pr _Pred)
 	return _Count;
 }
 
+template<typename _InIt, typename T, typename _Pr> inline
+typename iterator_traits<_InIt>::difference_type
+_count_pr(_InIt first, _InIt last, const T&val, _Pr _Pred)
+{
+	iterator_traits<_InIt>::difference_type _count = 0;
+	for(; first != last; ++first){
+		if(_Pred(*first, val))
+			++_cout;
+	}
+	return _count;
+}
 
 /*----------------search---------------------*/
 template <typename _FwdIt> inline
@@ -44,12 +56,12 @@ _FwdIt min_element(_FwdIt first, _FwdIt last)
 	return _Min;
 }
 
-template <typename _FwdIt, typename _Pr> inline
-_FwdIt min_element(_FwdIt first, _FwdIt last, _Pr _Pred)
+template <typename _FwdIt, typename _Comp> inline
+_FwdIt min_element(_FwdIt first, _FwdIt last, _Comp comp)
 {
 	_FwdIt _Min = first;
 	for(; first != last; ++first)
-		if(_Pred(*first, *_Min))
+		if(comp(*first, *_Min))
 			_Min = first;
 	return _Min;
 }
@@ -64,12 +76,12 @@ _FwdIt max_element(_FwdIt first, _FwdIt last)
 	return _Max;
 }
 
-template <typename _FwdIt, typename _Pr> inline
-_FwdIt max_element(_FwdIt first, _FwdIt last, _Pr _Pred)
+template <typename _FwdIt, typename _Comp> inline
+_FwdIt max_element(_FwdIt first, _FwdIt last, _Comp comp)
 {
 	_FwdIt _Max = first;
 	for(; first != last; ++first)
-		if(!(_Pred(*first, *_Min)))
+		if(!(comp(*first, *_Min)))
 			_Max = first;
 	return _Max;
 }
@@ -86,13 +98,13 @@ pair<_FwdIt, _FwdIt> minmax_element(_FwdIt first, _FwdIt last)
 so (1 + 2) * (numElem - 1) / 2 times compare
 */
 template<typename FowIt, typename _Pr> inline
-pair<FowIt, FowIt> minmax_element(FowIt first, FowIt last, _Pr _Pred)
+pair<FowIt, FowIt> minmax_element(FowIt first, FowIt last, _Comp comp)
 {
 	pair<FowIt, FowIt> result{ first, first };
 	if (first == last) return result;       // empty range
 	if (++first == last) return result;     // one element range
 	// two elements range
-	if (_Pred(*first, *result.first))
+	if (comp(*first, *result.first))
 		result.first = first;
 	else
 		resul.second = first;
@@ -100,20 +112,20 @@ pair<FowIt, FowIt> minmax_element(FowIt first, FowIt last, _Pr _Pred)
 	while(++first != last){
 		FowIt next = first;
 		if ( ++next == last)  // only one element(first) left
-			if(_Pred(*first, *(result.first)))
+			if(comp(*first, *(result.first)))
 				result.first = first;
-			else(!(_Pred(*first, *result.second)))
+			else(!(comp(*first, *result.second)))
 				result.second = first;
 		else{
-			if(_Pred(*first, *next))     // first < next
-				if(_Pred(*first, *result.first))
+			if(comp(*first, *next))     // first < next
+				if(comp(*first, *result.first))
 					result.first = first;
-				else if(!(_Pred(*next, *result.second)))
+				else if(!(comp(*next, *result.second)))
 					result.second = next;
 			else
-				if(_Pred(*next, *result.first))
+				if(comp(*next, *result.first))
 					result.first = next;
-				else if(!(_Pred(*first, *result.second)))
+				else if(!(comp(*first, *result.second)))
 					result.second = first;
 		}
 	}
@@ -136,6 +148,15 @@ _InIt find_if(_InIt first, _InIt last, _Pr _Pred)
 {
 	for(; first != last; ++first)
 		if(_Pred(*first))
+			return first;
+	return last;
+}
+
+template<typename _InIt, typename T, typename _Pr> inline
+_InIt _find_pr(_InIt first, _InIt last, const T&val, _Pr _Pred)
+{
+	for(; first != last; ++first)
+		if(_Pred(*first, val))
 			return first;
 	return last;
 }
@@ -283,11 +304,37 @@ bool equal(_InIt1 first1, _InIt1 last1, _InIt2 first2, _Pr _Pred)
 }
 
 
+template<typename _FwdIt1, typename _FwdIt2> inline
+bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt2 last2)
+{
+	return is_permutation(first1, last1, first2, last2, equal_to<>());
+}
 
 
-
-template <typename _InIt1, typename _InIt2> inline
-bool equal(_InIt1 first1, _InIt1 last1, _InIt2 first2)
+/*because no sort, compare count of each number appears in both ranges*/
+template<typename _FwdIt1, typename _FwdIt2, _Pr _Pred> inline
+bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _Pred)
+{
+	// find the first inequality of two range
+	for(; first1 != last1; ++first1, ++first2)
+		if(! _Pred(*first1, *first2))
+			break;
+	if(first1 != last1){
+		//calculate the end of the range2
+		_FwdIt2 last2 = first2;
+		advance(last2, distance(first1, last1));
+		for(_FwdIt1 next1 = first1; next1 != last1; ++next1){
+			if(next1 != _find_pr(first1, next1, *next1, _Pred))  // element *next has been counted
+				continue;
+			// element *next appreas _count2 time in range2
+			auto _count2 = _count_pr(first2, last2, *next1, _Pred);  
+			if(_count2 ==0 ||                 // dose not appear
+				_count2 != _count_pr(first1, last1, *next1, _Pred))  // count does not match!
+				return false;
+		}
+	}
+	return true;
+}
 
 template <typename _InIt, typename _Fn1> inline
 _Fn1 for_each(_InIt first, _InIt last, _Fn1 _Func)
