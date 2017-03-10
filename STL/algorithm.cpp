@@ -279,7 +279,7 @@ _FwdIt adjacent_find(_FwdIt first, _FwdIt last, _Pr _Pred)
 {
 	if(first != last)
 		for(_FwdIt cur; cur = first, ++first != last; )
-			if(_Pred(*cur, first))
+			if(_Pred(*cur, *first))
 				return cur;
 	return last;
 }
@@ -335,6 +335,107 @@ bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _Pred)
 	}
 	return true;
 }
+
+
+template<typename _InIt1, typename _InIt2> inline
+pair<_InIt1, _InIt2>
+mismatch(_InIt1 first1, _InIt1 last1, _InIt2 first2)
+{
+	return mismatch(first1, last1, first2, equal_to<>());
+}
+
+template<typename _InIt1, typename _InIt2, typename _Pr> inline
+pair<_InIt1, _InIt2>
+mismatch(_InIt1 first1, _InIt1 last1, _InIt2 first2, _Pr _Pred)
+{
+	while (first1 != last1 && _Pred(*first1, *first2)){
+		++first1;
+		++first2;
+	}
+	return make_pair(first1, first2);
+}
+
+template<typename _InIt1, typename _InIt2> inline
+bool lexicographical_compare(_InIt1 first1, _InIt1 last1, _InIt2 first2, _InIt2 last2)
+{
+	return lexicographical_compare(first1, last1, first2, last2, less<>());
+}
+
+template<typename _InIt1, typename _InIt2, typename _Pr> inline
+bool lexicographical_compare(_InIt1 first1, _InIt1 last1, _InIt2 first2, _InIt2 last2, _Pr _Pred)
+{
+	for(;first1 != last1 && first2 != last2; ++first1, ++first2){
+		if(!_Pred(*first1, *first2))
+			return false
+		if(_Pred(*first1, *first2))
+			return true;
+	}
+	 return (first1 == last1 && first2 != last2);
+}
+
+template<typename _FwdIt> inline
+bool is_sorted(_FwdIt first, _FwdIt last)
+{
+	return is_sorted(first, last, less<>());
+}
+
+template<typename _FwdIt, typename _Pr> inline
+bool is_sorted(_FwdIt first, _FwdIt last, _Pr _Pred)
+{
+	return is_sorted_until(first, last, _Pred) == last;
+}
+
+template<typename _FwdIt> inline
+_FwdIt is_sorted_until(_FwdIt first, _FwdIt last)
+{
+	return is_sorted_until(first, last, less<>());
+}
+
+template<typename _FwdIt, typename _Pr> inline
+_FwdIt is_sorted_until(_FwdIt first, _FwdIt last, _Pr _Pred)
+{
+	if(first != last){
+		for(_FwdIt cur = first; ++first != last;){
+			if(! _Pred(*first, *cur))
+				return first;
+			cur = first;
+		}
+	}
+	return last;
+}
+
+template<typename _InIt, typename _Pr> inline
+bool is_partitioned(_InIt first, _InIt last, _Pr _Pred)
+{
+	for(; first != last; ++first)
+		if(!_Pred(*first))
+			break;
+	for(; first != last; ++first)
+		if(_Pred(*first))
+			return false;
+	return true;
+}
+
+template<typename _FwdIt, typename _Pr> inline
+_FwdIt is_partitioned(_FwdIt first, _FwdIt last, _Pr _Pred)
+{
+	typename iterator_traits<_FwdIt>::difference_type count = 0;
+	count = distance(first, last);
+	while(0 < count){
+		auto count2 = count / 2;
+		_FwdIt first2 = first;
+		advance(first2, count2);
+
+		if(_Pred(*first2)){
+			first = ++first2;
+			count = count2 + 1;
+		}
+		else
+			count = count2;
+	}
+	return first;
+}
+
 
 template <typename _InIt, typename _Fn1> inline
 _Fn1 for_each(_InIt first, _InIt last, _Fn1 _Func)
