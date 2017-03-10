@@ -6,6 +6,7 @@ for simply, assume
 introduction to arguments:
 _InIt:  input iterator type
 _FwdIt: Forward iterator type
+_Fn:    any function type
 _Fn1:   Unary function type
 _Fn2:   Binary function type
 _Pr:    predicate operation
@@ -550,3 +551,49 @@ _OutIt transform(_InIt first1, _InIt last1, _InIt first2, _OutIt destFirst, _Fn1
 	return destFirst;
 }
 
+template<typename _FwdIt1, typename _FwdIt2> inline
+_FwdIt2 swap_ranges(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2)
+{
+	for(; first1 != last1; ++first1, ++first2)
+		iter_swap(first1, first2);
+	return first2;
+}
+
+template<typename _FwdIt, typename T> inline
+void fill(_FwdIt first, _FwdIt last, const T& val)
+{
+	for(; first != last; ++first)
+		*first = val;
+}
+
+template<typename _OutIt, typename Sz, typename T> inline
+_OutIt fill_n(_OutIt first, Sz num, const T& val)
+{
+	for(Sz i = 0; i < num; ++i){
+		*first++ = val;
+	}
+	return first;
+}
+
+template<typename _FwdIt, typename _Fn> inline
+void generate(_FwdIt first, _FwdIt last, _Fn fn)
+{
+	for(; first != last; ++first)
+		*first = fn();
+}
+
+template<typename _OutIt, typename Sz, typename _Fn> inline
+_OutIt generate_n(_OutIt first, Sz num, _Fn fn)
+{
+	for(Sz i = 0; i < num; ++i){
+		*first++ = fn();
+	}
+	return first;
+}
+
+template<typename _FwdIt, typename T> inline
+void iota(_FwdIt first, _FwdIt last, const T startVal)
+{
+	for(; first != last; ++first)
+		*first = startVal++;
+}
