@@ -7,6 +7,7 @@ introduction to arguments:
 _InIt:  input iterator type
 _FwdIt: Forward iterator type
 _Fn1:   Unary function type
+_Fn2:   Binary function type
 _Pr:    predicate operation
 _Comp:  compare function
 */
@@ -303,6 +304,32 @@ bool equal(_InIt1 first1, _InIt1 last1, _InIt2 first2, _Pr _Pred)
 	return true;
 }
 
+template<typename _InIt, typename _Pr> inline
+bool all_of(_InIt first, _InIt last, _Pr _Pred)
+{
+	for(; first != last; ++first)
+		if(!_Pred(*first))
+			return false;
+	return true;
+}
+
+template<typename _InIt, typename _Pr> inline
+bool any_of(_InIt first, _InIt last, _Pr _Pred)
+{
+	for(; first != last; ++first)
+		if(_Pred(*first))
+			return true;
+	return false;
+}
+
+template<typename _InIt, typename _Pr> inline
+bool none_of(_InIt first, _InIt last, _Pr _Pred)
+{
+	return for(; first != last; ++first)
+		if(_Pred(*first))
+			return false;
+	return true;
+}
 
 template<typename _FwdIt1, typename _FwdIt2> inline
 bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt2 last2)
@@ -417,7 +444,7 @@ bool is_partitioned(_InIt first, _InIt last, _Pr _Pred)
 }
 
 template<typename _FwdIt, typename _Pr> inline
-_FwdIt is_partitioned(_FwdIt first, _FwdIt last, _Pr _Pred)
+_FwdIt partition_point(_FwdIt first, _FwdIt last, _Pr _Pred)
 {
 	typename iterator_traits<_FwdIt>::difference_type count = 0;
 	count = distance(first, last);
@@ -436,13 +463,90 @@ _FwdIt is_partitioned(_FwdIt first, _FwdIt last, _Pr _Pred)
 	return first;
 }
 
-
+/*---------------modifying-----------------------*/
 template <typename _InIt, typename _Fn1> inline
 _Fn1 for_each(_InIt first, _InIt last, _Fn1 _Func)
 {
 	for(; first != last; ++first)
-		_Func(first);
+		_Func(*first);
 
 	return (move(_Func));       // since C++11
+}
+
+template<typename _OutIt, typename _InIt> inline
+_OutIt copy(_InIt first, _InIt last, _OutIt destFirst)
+{
+	for(; first != last; ++first, ++destFirst)
+		*destFirst = *first;
+	return destFirst;
+}
+
+template<typename _OutIt, typename _InIt, typename _Pr> inline
+_OutIt copy_if(_InIt first, _InIt last, _OutIt destFirst, _Pr _Pred)
+{
+	for(; first != last; ++first){
+		if(_Pred(*first)){
+			*destFirst = *first;
+			++destFirst;
+		}
+	}
+	return destFirst;
+}
+
+template<typename _OutIt, typename _InIt, typename Sz> inline
+_OutIt copy_n(_InIt first, Sz num, _OutIt destFirst)
+{
+	for(Sz i = 0; i < num; ++i){
+		*destFirst = *first;
+		++first;
+		++destFirst;
+	}
+	return destFirst;
+}
+
+template<typename _BiIt1, typename _BiIt2> inline
+_BiIt2 copy_backward(_BiIt1 first, _BiIt1 last, _BiIt2 destEnd)
+{
+	while(first != last){
+		--destEnd;
+		--last;
+		*destEnd = *last;
+	}
+	return destEnd;
+}
+
+template<typename _OutIt, typename _InIt> inline
+_OutIt move(_InIt first, _InIt last, _OutIt destFirst)
+{
+	for(; first != last; ++first, ++destFirst)
+		*destFirst = move(*first);
+	return destFirst;
+}
+
+template<typename _BiIt1, typename _BiIt2> inline
+_BiIt2 move_backward(_BiIt1 first, _BiIt1 last, _BiIt2 destEnd)
+{
+	while(first != last){
+		--destEnd;
+		--last;
+		*destEnd = move(*last);
+	}
+	return destEnd;
+}
+
+template<typename _InIt, typename _OutIt, typename _Fn1> inline
+_OutIt transform(_InIt first, _InIt last, _OutIt destFirst, _Fn1 fn1)
+{
+	for(; first != last; ++first, ++destFirst)
+		*destFirst = fn1(*first);
+	return destFirst;
+}
+
+template<typename _InIt1, typename _InIt2, typename _OutIt, typename _Fn2> inline
+_OutIt transform(_InIt first1, _InIt last1, _InIt first2, _OutIt destFirst, _Fn1 fn2)
+{
+	for(; first1 != last1; ++first1, ++first2, ++destFirst)
+		*destFirst = fn2(*first1, *first2);
+	return destFirst;
 }
 
