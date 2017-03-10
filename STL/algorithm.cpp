@@ -33,6 +33,7 @@ count_if(_InIt first, _InIt last, _Pr _Pred)
 }
 
 
+/*----------------search---------------------*/
 template <typename _FwdIt> inline
 _FwdIt min_element(_FwdIt first, _FwdIt last)
 {
@@ -43,7 +44,7 @@ _FwdIt min_element(_FwdIt first, _FwdIt last)
 	return _Min;
 }
 
-templat <typename _FwdIt, typename _Pr> inline
+template <typename _FwdIt, typename _Pr> inline
 _FwdIt min_element(_FwdIt first, _FwdIt last, _Pr _Pred)
 {
 	_FwdIt _Min = first;
@@ -117,6 +118,149 @@ pair<FowIt, FowIt> minmax_element(FowIt first, FowIt last, _Pr _Pred)
 		}
 	}
 	return result;
+}
+
+
+template<typename _InIt, typename T> inline
+_InIt find(_InIt first, _InIt last, const T& val)
+{
+	for(; first != last; ++first){
+		if(*first == val)
+			return first;
+	}
+	return last;
+}
+
+template<typename _InIt, typename _Pr> inline
+_InIt find_if(_InIt first, _InIt last, _Pr _Pred)
+{
+	for(; first != last; ++first)
+		if(_Pred(*first))
+			return first;
+	return last;
+}
+
+template<typename _InIt, typename _Pr> inline
+_InIt find_if_not(_InIt first, _InIt last, _Pr _Pred)
+{
+	for(; first != last; ++first)
+		if(! _Pred(*first))
+			return first;
+	return last;
+}
+
+
+template<typename _FwdIt, typename Sz, typename T> inline
+_FwdIt search_n(_FwdIt first, _FwdIt last, Sz count, const T& val)
+{
+	return search_n(first, last, count, val, equal_to<>());
+}
+
+template<typename _FwdIt, typename Sz, typename T, typename _Pr> inline
+_FwdIt search_n(_FwdIt first, _FwdIt last, Sz count, const T& val, _Pr _Pred)
+{
+	for(; first != last; ++first){
+		if(_Pred(*first, val)){
+			_FwdIt found = first;
+			Sz num = count;
+			while(1){
+				if(--num == 0)
+					return first;
+				else if(++found == last)
+					return last;
+				else if(! _Pred(*found, val))
+					break;
+			}
+			first = found;
+		}
+	}
+	return last;
+}
+
+template<typename _FwdIt1, typename _FwdIt2> inline
+_FwdIt search(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt2 last2)
+{
+	return search(first1, last1, first2, last2, equal_to<>());
+}
+
+template<typename _FwdIt1, typename _FwdIt2, typename _Pr> inline
+_FwdIt1 search(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt2 last2, _Pr _Pred)
+{
+	typename iterator_traits<_FwdIt1>::difference_type count1 = 0;
+	typename iterator_traits<_FwdIt2>::difference_type count2 = 0;
+	count1 = distance(first1, last1);
+	count2 = distance(first2, last2);
+	for(; conut2 <= count1; ++first1, --count1){
+		_FwdIt1 found1 = first1;
+		for(_FwdIt2 found2 = first2;; ++found2, ++found1){
+			if(found2 == last2)
+				return first;
+			else if(! _Pred(*found1, *found2))
+				break;
+		}
+	}
+	return last1;
+}
+
+
+template<typename _FwdIt1, typename _FwdIt2> inline
+_FwdIt1 find_end(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt last2)
+{
+	find_end(first1, last1, first2, last2, equal_to<>());
+}
+
+template<typename _FwdIt1, typename _FwdIt2, typename _Pr> inline
+_FwdIt1 find_end(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt last2, _Pr _Pred)
+{
+	_FwdIt1 result = last1;
+	for(; ; ++first1){
+		_FwdIt1 found1 = first1;
+		for(_FwdIt2 found2 = first2; ; ++found2, ++found1){
+			if(found2 == last2){
+				result = first1;
+				break;
+			}
+			else if(found1 == last1)
+				return result;
+			else if(!_Pred(*found1, *found2))
+				break;
+		}
+	}
+	return result;
+}
+
+
+template<typename _InIt, typename _FwdIt> inline
+_InIt find_first_of(_InIt first1, _InIt last1, _FwdIt first2, _FwdIt last2)
+{
+	return find_first_of(first1, last1, first2, last2, equal_to<>());
+}
+
+template<typename _InIt, typename _FwdIt, typenmae _Pr> inline
+_InIt find_first_of(_InIt first1, _InIt last1, _FwdIt first2, _FwdIt last2, _Pr _Pred)
+{
+	for(; first1 != last1; ++first1)
+		for(_FwdIt mid2 = first2; mid2 != last2; ++mid2)
+			if(_Pred(*first1, *mid2))
+				return first1;
+	return last1;
+}
+
+
+template<typename _FwdIt> inline
+_FwdIt adjacent_find(_FwdIt first, _FwdIt last)
+{
+	return adjacent_find(first, last, equal_to<>())
+}
+
+template<typename _FwdIt, typename _Pr> inline
+_FwdIt adjacent_find(_FwdIt first, _FwdIt last, _Pr _Pred)
+{
+	if(first != last)
+		for(_FwdIt cur; cur = first, ++first != last; )
+			if(_Pred(*cur, first))
+				return cur;
+	return last;
 }
 /*------------algorithm to predicate**************/
 
