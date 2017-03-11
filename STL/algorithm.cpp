@@ -630,3 +630,106 @@ _OutIt replace_copy(_FwdIt first, _FwdIt last, _OutIt destFirst, _Pr _Pred, cons
 	}
 	return destFirst;
 }
+
+
+/* overwrite val to implement remove function
+using shift to implement overwrite*/
+template<typename _FwdIt, typename T> inline
+_FwdIt remove(_FwdIt first, _FwdIt last, const T& val)
+{
+	first = find(first, last, val);  
+	if(first != last)
+		for(_FwdIt next = first; ++next != last;){
+			if(!(*next == val)){
+				*first = move(*next);
+				++first;
+			}
+		}
+	return first;
+}
+
+template<typename _FwdIt, typename _Pr> inline
+_FwdIt remove_if(_FwdIt first, _FwdIt last, _Pr _Pred)
+{
+	first = find_if(first, last, _Pred);  
+	if(first != last)
+		for(_FwdIt next = first; ++next != last;){
+			if(!_Pred(*first)){
+				*first = move(*next);
+				++first;
+			}
+		}
+	return first;
+}
+
+template<typename _FwdIt, typename _OutIt, typename T> inline
+_OutIt remove_copy(_FwdIt first1, _FwdIt last1, _OutIt first2, const T& val)
+{
+	for(; first1 != last1; ++first1){
+		if(!(*first1 == val))
+			*first2++ = *first1;
+	}
+	return first2;
+}
+
+template<typename _FwdIt, typename _OutIt, typename _Pr> inline
+_OutIt remove_copy_if(_FwdIt first1, _FwdIt last1, _OutIt first2, _Pr _Pred)
+{
+	for(; first1 != last1; ++first1)
+		if(!_Pred(*first1))
+			*first2++ = *first1;
+	return first2;
+}
+
+template<typename _FwdIt> inline
+void unique(_FwdIt first, _FwdIt last)
+{
+	if(first ! last){
+		for(_FwdIt cur = first; ++first != last; ){
+			if(*cur == *first){
+				while(++first != last){
+					if(*cur != *first)
+						*(++cur) = move(*first);
+				}
+				return ++cur;
+			}
+		}
+	}
+	return last;
+}
+
+template<typename _FwdIt, typename _Pr> inline
+void unique(_FwdIt first, _FwdIt last, _Pr _Pred){
+	if(first != last){
+		for(; _FwdIt cur = first, ++first != last; ){
+			if(_Pred(*cur, *first)){
+				while(++first != last){
+					if(!_Pred(*cur, *first))
+						*(++cur) = move(*first);
+				}
+				return ++cur;
+			}
+		}
+	}
+	return last;
+}
+
+template<typename _FwdIt, typename _OutIt> inline
+_OutIt unique_copy(_FwdIt first, _FwdIt last, _OutIt destFirst)
+{
+	return unique_copy(first, last, destFirst, equal_to<>());
+}
+
+template<typename _FwdIt, typename _OutIt, typename _Pr> inline
+_OutIt unique_copy_if(_FwdIt first, _FwdIt last, _OutIt destFirst, _Pr _Pred)
+{
+	if(first != last){
+		*destFirst++ = *first;
+		for(_FwdIt cur = first; ++first != last)
+			if(!_Pred(*cur, *first)){
+				cur = first;
+				*destFirst++ = *cur;
+			}
+	}
+	return destFirst;
+}
