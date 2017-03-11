@@ -332,39 +332,6 @@ bool none_of(_InIt first, _InIt last, _Pr _Pred)
 	return true;
 }
 
-template<typename _FwdIt1, typename _FwdIt2> inline
-bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt2 last2)
-{
-	return is_permutation(first1, last1, first2, last2, equal_to<>());
-}
-
-
-/*because no sort, compare count of each number appears in both ranges*/
-template<typename _FwdIt1, typename _FwdIt2, _Pr _Pred> inline
-bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _Pred)
-{
-	// find the first inequality of two range
-	for(; first1 != last1; ++first1, ++first2)
-		if(! _Pred(*first1, *first2))
-			break;
-	if(first1 != last1){
-		//calculate the end of the range2
-		_FwdIt2 last2 = first2;
-		advance(last2, distance(first1, last1));
-		for(_FwdIt1 next1 = first1; next1 != last1; ++next1){
-			if(next1 != _find_pr(first1, next1, *next1, _Pred))  // element *next has been counted
-				continue;
-			// element *next appreas _count2 time in range2
-			auto _count2 = _count_pr(first2, last2, *next1, _Pred);  
-			if(_count2 ==0 ||                 // dose not appear
-				_count2 != _count_pr(first1, last1, *next1, _Pred))  // count does not match!
-				return false;
-		}
-	}
-	return true;
-}
-
-
 template<typename _InIt1, typename _InIt2> inline
 pair<_InIt1, _InIt2>
 mismatch(_InIt1 first1, _InIt1 last1, _InIt2 first2)
@@ -732,4 +699,185 @@ _OutIt unique_copy_if(_FwdIt first, _FwdIt last, _OutIt destFirst, _Pr _Pred)
 			}
 	}
 	return destFirst;
+}
+
+template<typename _BiIt> inline
+void reverse(_BiIt first, _BiIt last)
+{
+	while((first != last) && (first != --last))
+		iter_swap(first++, last);
+}
+
+template<typename _BiIt, typename _OutIt> inline
+_OutIt reverse_copy(_BiIt first, _BiIt last, _OutIt destFirst)
+{
+	while(first != last--)
+		*destFirst++ = *last;
+	return destFirst;
+}
+
+template<typename _FwdIt> inline
+_FwdIt rotate(_FwdIt first, _FwdIt newFirst, _FwdIt last)
+{
+	if(first == newFirst) return last;
+	if(newFirst == last) return first;
+	_FwdIt second = newFirst;
+	do{
+		iter_swap(first++, second++);
+		if(first == newFirst)
+			newFirst = second;
+	}while(second != last); //first second end to find retrun pos
+
+	_FwdIt ret = first;
+
+	for(second = newFirst; next != last; ){
+		iter_swap(first++, second++);
+		if(first == newFirst) 
+			newFirst = second;
+		else if(second == last)
+			second = newFirst;
+	}
+	return ret;
+}
+
+template<typename _FwdIt, typename _OutIt> inline
+_OutIt rotate_copy(_FwdIt first, _FwdIt newFirst, _FwdIt last, _OutIt destFirst)
+{
+	for(_FwdIt second = newFirst; second != last; ++second)
+		iter_swap(destFirst++, second);
+	for(; first != newFirst; ++first)
+		iter_swap(destFirst++, first);
+	return destFirst;
+}
+
+template<typename _FwdIt1, typename _FwdIt2> inline
+bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _FwdIt2 last2)
+{
+	return is_permutation(first1, last1, first2, last2, equal_to<>());
+}
+
+
+/*because no sort, compare count of each number appears in both ranges*/
+template<typename _FwdIt1, typename _FwdIt2, _Pr _Pred> inline
+bool is_permutation(_FwdIt1 first1, _FwdIt1 last1, _FwdIt2 first2, _Pred)
+{
+	// find the first inequality of two range
+	for(; first1 != last1; ++first1, ++first2)
+		if(! _Pred(*first1, *first2))
+			break;
+	if(first1 != last1){
+		//calculate the end of the range2
+		_FwdIt2 last2 = first2;
+		advance(last2, distance(first1, last1));
+		for(_FwdIt1 next1 = first1; next1 != last1; ++next1){
+			if(next1 != _find_pr(first1, next1, *next1, _Pred))  // element *next has been counted
+				continue;
+			// element *next appreas _count2 time in range2
+			auto _count2 = _count_pr(first2, last2, *next1, _Pred);  
+			if(_count2 ==0 ||                 // dose not appear
+				_count2 != _count_pr(first1, last1, *next1, _Pred))  // count does not match!
+				return false;
+		}
+	}
+	return true;
+}
+
+template<typename _BiIt> inline
+bool next_permutation(_BiIt first, _BiIt last)
+{
+	if(first == last) return false;
+	_BiIt i = last;
+	if(first == --i)   // only one elem, so no next perm
+		return false;
+
+	while(true){
+		_BiIt nextI = i;
+		--i;
+		if(*i < *nextI){
+			_BiIt j = last;
+			while(! (*i < *(--j)));
+			iter_swap(i, j);
+			reverse(nextI, last);
+			return true;
+		}
+		if(i == first){           // all in reverse order
+			reverse(first, last);
+			return false;
+		}
+	}
+}
+
+template<typename _BiIt, typename _Pr> inline
+bool next_permutation(_BiIt first, _BiIt last, _Pr _Pred)
+{
+	if(first == last) return false;
+	_BiIt i = last;
+	if(first == --i)   // only one elem, so no next perm
+		return false;
+
+	while(true){
+		_BiIt nextI = i;
+		--i;
+		if(_Pred(*i, *nextI)){
+			_BiIt j = last;
+			while(! _Pred(*i, *(--j)));
+			iter_swap(i, j);
+			reverse(nextI, last);
+			return true;
+		}
+		if(i == first){           // all in reverse order
+			reverse(first, last);
+			return false;
+		}
+	}
+}
+
+template<typename _BiIt> inline
+bool prev_permutation(_BiIt first, _BiIt last)
+{
+	if(first == last) return false;
+	_BiIt i = last;
+	if(first == --i)   // only one elem, so no next perm
+		return false;
+
+	while(true){
+		_BiIt nextI = i;
+		--i;
+		if(*nextI < *i){
+			_BiIt j = last;
+			while(! (*(--j) < *i));
+			iter_swap(i, j);
+			reverse(nextI, last);
+			return true;
+		}
+		if(i == first){           // all in reverse order
+			reverse(first, last);
+			return false;
+		}
+	}
+}
+
+template<typename _BiIt, typename _Pr> inline
+bool next_permutation(_BiIt first, _BiIt last, _Pr _Pred)
+{
+	if(first == last) return false;
+	_BiIt i = last;
+	if(first == --i)   // only one elem, so no next perm
+		return false;
+
+	while(true){
+		_BiIt nextI = i;
+		--i;
+		if(_Pred(*nextI, *i)){
+			_BiIt j = last;
+			while(! _Pred(*(--j), *i));
+			iter_swap(i, j);
+			reverse(nextI, last);
+			return true;
+		}
+		if(i == first){           // all in reverse order
+			reverse(first, last);
+			return false;
+		}
+	}
 }
