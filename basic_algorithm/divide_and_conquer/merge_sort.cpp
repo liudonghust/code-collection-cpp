@@ -22,7 +22,7 @@ void merge_sort(int[] val, int left, int right, int[] temp)
 	if(left == right)         // base case: only one element == sorted
 		return;
 
-	int middle = (right -left) / 2;         // divide
+	int middle = (right + left) / 2;         // divide
 
 	merge_sort(val, left, middle, temp);        // conquer left
 	merge_sort(val, middle+1, right, temp);     // conquer right
