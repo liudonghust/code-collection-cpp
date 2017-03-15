@@ -23,6 +23,39 @@ public:
 	typedef __single_list_node<T>* link_type;
 
 	link_type node;
+
+	// default constructor
+	__single_list_iterator() : node{ nullptr }{}
+
+	// constructor
+	explicit __single_list_iterator(link_type node) : node{ node }{}
+
+	// copy constructor
+	__single_list_iteraor(const iterator& iter2) : node{ iter2.node }{}
+
+	value_type& operator*(){
+		return node->data;
+	}
+
+	iterator& operator++(){
+		node = node->next;
+		return *this;
+	}
+
+	iterator operator++(int){
+		iterator temp = *this;
+		//node = node->next;
+		++ *this;
+		return temp;
+	}
+
+	bool operator==(const iterator& iter2){
+		return node == iter2.node;
+	}
+
+	bool operator!=(const iterator& iter2){
+		return !(*this == iter2);
+	}
 };
 
 template<typename T>
