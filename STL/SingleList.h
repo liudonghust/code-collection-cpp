@@ -13,16 +13,56 @@ public:
 };
 
 template<typename T>
-class __single_list_iterator{
+class __single_list_const_iterator{
 public:
-	typedef __single_list_iterator<T> iterator;
-
+	typedef __single_list_const_iterator<T> const_iterator;
 	typedef T value_type;
 	typedef value_type* pointer;
 	typedef value_type& reference;
 	typedef __single_list_node<T>* link_type;
 
 	link_type node;
+
+	// defaul constructor
+	__single_list_const_iterator() : node{ nullptr }{}
+
+	// constructor
+	explicit __single_list_const_iterator(link_type node) : node{ node }{}
+
+	// copy constructor
+	__single_list_const_iterator(const const_iterator& iter2) : node{ iter2.node }{}
+
+	const value_type& operator*() const{
+		return node->data;
+	}
+
+	const const_iterator& operator++(){
+		node = node->next;
+		return *this;
+	}
+
+	const const_iterator& operator++(int){
+		const_iterator temp = *this;
+		++(*this);
+		return temp;
+	}
+
+	bool operator==(const iterator& iter2) const{
+		return node == iter2.node;
+	}
+
+	bool operator!=(const iterator& iter2) const{
+		return !(*this == iter2);
+	}
+};
+template<typename T>
+class __single_list_iterator : public __single_list_const_iterator{
+public:
+	typedef __single_list_iterator<T> iterator;
+	typedef T value_type;
+	typedef value_type* pointer;
+	typedef value_type& reference;
+	typedef __single_list_node<T>* link_type;
 
 	// default constructor
 	__single_list_iterator() : node{ nullptr }{}
@@ -47,14 +87,6 @@ public:
 		//node = node->next;
 		++ *this;
 		return temp;
-	}
-
-	bool operator==(const iterator& iter2){
-		return node == iter2.node;
-	}
-
-	bool operator!=(const iterator& iter2){
-		return !(*this == iter2);
 	}
 };
 
