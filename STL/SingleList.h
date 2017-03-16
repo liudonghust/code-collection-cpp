@@ -71,7 +71,7 @@ public:
 	explicit __single_list_iterator(link_type node) : __single_list_const_iterator<T>(node){}
 
 	// copy constructor
-	__single_list_iterator(const iterator& iter2) : node{ iter2.node }{}
+	__single_list_iterator(const iterator& iter2) : __single_list_const_iterator<T>(iter2.node){}
 
 	value_type& operator*(){
 		return node->data;
@@ -113,12 +113,12 @@ public:
 	// construct a list with size n and defualt value
 	explicit SingleList(size_type n){
 		empty_init();
-		init_n(n, T());
+		init_n(before_begin(), n, T());
 	}
 	// construct a list with size n and value elem.
 	SingleList(size_type n, const T& elem){
 		empty_init();
-		init_n(n, T(elem));
+		init_n(before_begin(), n, T(elem));
 	}
 
 	// construct a list using initializer list
@@ -249,6 +249,98 @@ public:
 		return *this;
 	}
 
+	value_type& front(){
+		return head->next->data;
+	}
+
+	// insert elements
+	void push_front(const T& elem){
+		link_type temp = new __single_list_node < T > ;
+		temp->data = elem;
+		temp->next = head->next;
+		head->next = temp;
+	}
+
+	template<typename _FwdIt>
+	iterator insert_after(_FwdIt pos, const T& elem)
+	{
+		link_type temp = new __single_list_node < T > ;
+		temp->data = elem;
+		// problem: how to get link_node according to pos.
+		// so class iterator contains link_type node.
+		temp->next = pos.node->next;
+		pos.node->next = temp;
+		return iterator(temp);
+	}
+
+	template<typename _FwdIt>
+	iterator insert_after(_FwdIt pos, size_type n, const T& elem)
+	{
+		while (n > 0){
+			pos = insert_after(pos, elem);
+			--n;
+		}
+		return pos;
+	}
+	/*
+	template<typename _FwdIt1, typename _FwdIt2>
+	iterator insert_after(_FwdIt1 pos, _FwdIt2 first, _FwdIt2 last)
+	{
+		return insert_range(pos, first, last);
+	}
+	*/
+	template<typename _FwdIt>
+	iterator insert_after(_FwdIt pos, std::initializer_list<T> init_list)
+	{
+		return insert_range(pos, init_list.begin(), init_list.end());
+	}
+
+	template<typename _FwdIt>
+	void erase_after(_FwdIt pos){
+		erase_after(pos, end());
+	}
+	template<typename _FwdIt>
+	void erase_after(_FwdIt first, _FwdIt last)
+	{
+		if (first != last){
+			_FwdIt temp = first;
+			_FwdIt pos = ++temp;
+			while (pos != last){
+				delete (pos++).node;
+			}
+			first.node->next = pos.node;
+		}
+	}
+
+	void remove(const T& val){
+		if (head != nullptr){
+			link_type p = head;
+			while (p->next != nullptr){
+				if (p->next->data == val){
+					link_type temp = p->next;
+					p -> next = p->next->next;
+					delete temp;
+				}
+				else
+					p = p->next; // no else will result in one val left
+			}
+		}
+	}
+	template<typename _Pr>
+	void remove_if(_Pr _Pred){
+
+	}
+
+	void resize(size_type n)
+	{
+		_resize(n, T());
+	}
+
+	void resize(size_type n, const T& val)
+	{
+		_resize(n, val);
+	}
+
 	void clear(){
 		if (head != nullptr){
 			link_type p = head->next;
@@ -259,6 +351,10 @@ public:
 			}
 			delete head;
 		}
+	}
+
+	iterator before_begin(){
+		return iterator(head);
 	}
 
 	iterator begin(){
@@ -293,8 +389,9 @@ protected:
 		head = new __single_list_node<T>;
 		head->next = nullptr;
 	}
-	void init_n(size_type n, const T& value){
-		link_type p = head;
+	template<typename _FwdIt>
+	void init_n(_FwdIt first, size_type n, const T& value){
+		link_type p = first.node;
 		while (n-- > 0){
 			link_type temp = new __single_list_node<T>;
 			temp->data = value;
@@ -346,6 +443,35 @@ protected:
 			p1 = p1->next;
 		}
 		return *this;
+	}
+
+	template<typename _FwdIt1, typename _FwdIt2>
+	iterator insert_range(_FwdIt1 pos, _FwdIt2 first, _FwdIt2 last)
+	{
+		while (first != last){
+			pos = insert_after(pos, *first);
+			++first;
+		}
+		return pos;
+	}
+
+	void _resize(size_type n, const T& val)
+	{
+		if (head == nullptr)
+			init_n(before_begin(), n, val);
+		else{
+			link_type p = head;
+			while (p->next != nullptr && n > 0){
+				p = p->next;
+				--n;
+			}
+			while (p->next != nullptr){
+				erase_after(iterator(p));
+			}
+			if (n > 0){
+				init_n(iterator(p), n, val);
+			}
+		}
 	}
 };
 
