@@ -30,6 +30,9 @@ public:
 	}
 	Str& operator=(Str&& s){
 		cout << "operator= rvalue" << endl;
+		// before moving, free old memory.
+		delete name;
+		
 		name = s.name;
 		s.name = nullptr;
 		return *this;
