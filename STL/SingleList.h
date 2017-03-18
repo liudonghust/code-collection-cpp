@@ -3,13 +3,21 @@
 #include <iosfwd>
 #include <cstddef>
 #include <initializer_list>
+#include <type_traits>
+#include <iterator>
+#include <string>
 
+template<typename _Iter>
+struct _Is_Iterator
+	: public std::integral_constant<bool, !std::is_integral<_Iter>::value>
+{};
 template<typename T>
 class __single_list_node{
 public:
 	typedef __single_list_node node;
-	T data;
-	node *next;
+	typedef T value_type;
+	value_type __data;
+	node *__next;
 };
 
 template<typename T>
@@ -33,15 +41,15 @@ public:
 	__single_list_const_iterator(const const_iterator& iter2) : node{ iter2.node }{}
 
 	const value_type& operator*() const{
-		return node->data;
+		return node->__data;
 	}
 
-	const const_iterator& operator++(){
-		node = node->next;
+	const_iterator& operator++(){
+		node = node->__next;
 		return *this;
 	}
 
-	const const_iterator& operator++(int){
+	const_iterator& operator++(int) {
 		const_iterator temp = *this;
 		++(*this);
 		return temp;
@@ -55,6 +63,9 @@ public:
 		return !(*this == iter2);
 	}
 };
+
+// iterator is based on const_iterator.
+// so we can use const_iterator as param in container.
 template<typename T>
 class __single_list_iterator : public __single_list_const_iterator<T>{
 public:
@@ -74,11 +85,11 @@ public:
 	__single_list_iterator(const iterator& iter2) : __single_list_const_iterator<T>(iter2.node){}
 
 	value_type& operator*(){
-		return node->data;
+		return node->__data;
 	}
 
 	iterator& operator++(){
-		node = node->next;
+		node = node->__next;
 		return *this;
 	}
 
@@ -109,243 +120,377 @@ public:
 	SingleList(){
 		empty_init();
 	}
-
-	// construct a list with size n and defualt value
 	explicit SingleList(size_type n){
 		empty_init();
-		init_n(before_begin(), n, T());
+		insert_after(before_begin(), n, T());
 	}
-	// construct a list with size n and value elem.
-	SingleList(size_type n, const T& elem){
+	explicit SingleList(size_type n, const value_type& val)
+	{
 		empty_init();
-		init_n(before_begin(), n, T(elem));
+		insert_after(before_begin(), n, T(val));
 	}
-
-	// construct a list using initializer list
-	explicit SingleList(std::initializer_list<T> init_list)
-	{
-		init_range(init_list.begin(), init_list.end());
+	template<typename _Iter,
+		typename = std::enable_if<_Is_Iterator<_Iter>::value, void>::type>
+	SingleList(_Iter first, _Iter last){
+		empty_init();
+		insert_after(before_begin(), first, last);
 	}
-	
-	// constructor using range [first, last)
-	template<typename _FwdIt>
-	SingleList(_FwdIt first, _FwdIt last)
-	{
-		init_range(first, last);
+	SingleList(std::initializer_list<T> init_list){
+		empty_init();
+		insert_after(before_begin(), init_list.begin(), init_list.end());
 	}
-
-	// copy constructor: deep copy
+	// copy constructor
 	SingleList(const SingleList& sl){
 		empty_init();
-		link_type p1 = head;
-		link_type p2 = sl.head->next;
-		while (p2 != nullptr){
-			link_type temp = new __single_list_node<T>;
-			temp->data = p2->data;
-			temp->next = nullptr;
-			p1->next = temp;
-			p1 = p1->next;
-			p2 = p2->next;
-		}
+		insert_after(before_begin(), sl.begin(), sl.end());
 	}
-
-	//move constructor
-	SingleList(SingleList&& rsl) : head(rsl.head){
-		rsl.head = nullptr;
-	}
-
-	// copy assignment
-	SingleList& operator=(const SingleList& sl2)
+	// move constructor
+	SingleList(SingleList&& rs)
 	{
-		return assign(sl2);
+		head = rs.head;
+		rs.head = nullptr;
 	}
-
-	//move assignment
-	SingleList& operator=(SingleList&& rsl)
+	
+	SingleList& operator=(const SingleList& sl)
 	{
-		return assign(std::forward<SingleList>(rsl));
-	}
-
-	SingleList& assign(const SingleList& sl2)
-	{
-		if (this == &sl2) return *this;
-		link_type p1 = head;
-		link_type p2 = sl2.head;
-		// just copy data
-		while (p1->next != nullptr && p2->next != nullptr){
-			p1->next->data = p2->next->data;
-			p1 = p1->next;
-			p2 = p2->next;
-		}
-		// if sl1 is longer than sl2, delete left
-		if (p1->next != nullptr){
-			p1->data = p2->data;
-			p1 = p1->next;
-			while (p1 != nullptr){
-				link_type temp = p1->next;
-				delete p1;
-				p1 = temp;
-			}
-		}
-		// if sl2 is longer than sl1, alloc new memory for sl1
-		if (p2->next != nullptr){
-			//p1->data = p2->data;
-			p2 = p2->next;
-			while (p2 != nullptr){
-				link_type temp = new __single_list_node < T >;
-				temp->data = p2->data;
-				temp->next = nullptr;
-				p1->next = temp;
-				p1 = p1->next;
-				p2 = p2->next;
-			}
-		}
+		assign(sl.begin(), sl.end());
 		return *this;
 	}
-	SingleList& assign(size_type n, const T& val)
-	{
-		link_type p = head;
-		while (n > 0 && p->next != nullptr){
-			p->next->data = val;
-			p = p->next;
-			--n;
-		}
-		while (n-- > 0){
-			link_type temp = new __single_list_node < T > ;
-			temp->data = val;
-			temp->next = nullptr;
-			p->next = temp;
-			p = p->next;
-		}
-		if (p->next != nullptr){
-			link_type pnext = p->next;
-			while (pnext != nullptr){
-				link_type temp = pnext->next;
-				delete pnext;
-				pnext = temp;
-			}
-			p->next = nullptr;
-		}
+	SingleList& operator=(std::initializer_list<T> init_list){
+		assign(init_list.begin(), init_list.end());
 		return *this;
 	}
-
-	/*
-	template<typename _FwdIt>
-	SingleList& assign(_FwdIt first, _FwdIt last)
-	{
-		return assign_range(first, last);
-	}
-	*/
-	SingleList& assign(std::initializer_list<T> init_list){
-		return assign_range(init_list.begin(), init_list.end());
-	}
-
-	SingleList& assign(SingleList&& rsl)
-	{
-		// before move assignment, free old memory first.
+	SingleList& operator=(SingleList&& rs){
+		// first delete old memory;
 		clear();
-		head = rsl.head;
-		rsl.head = nullptr;
+		head = rs.head;
+		rs.head = nullptr;
 		return *this;
 	}
-
-	value_type& front(){
-		return head->next->data;
-	}
-
-	// insert elements
-	void push_front(const T& elem){
-		link_type temp = new __single_list_node < T > ;
-		temp->data = elem;
-		temp->next = head->next;
-		head->next = temp;
-	}
-
-	template<typename _FwdIt>
-	iterator insert_after(_FwdIt pos, const T& elem)
+	template<typename _Iter,
+		typename = std::enable_if<_Is_Iterator<_Iter>::value, void>::type>
+	void assign(_Iter first, _Iter last)
 	{
-		link_type temp = new __single_list_node < T > ;
-		temp->data = elem;
-		// problem: how to get link_node according to pos.
-		// so class iterator contains link_type node.
-		temp->next = pos.node->next;
-		pos.node->next = temp;
-		return iterator(temp);
+		iterator _bef_beg = before_begin();
+		iterator _beg = begin();
+		iterator _end = end();
+		// copy data;
+		while (_beg != _end && first != last){
+			if (*_beg != *first)
+				*_beg = *first;
+			++_beg;
+			++_bef_beg;
+			++first;
+		}
+		// if this is longer than sl, delete left
+		if (_beg != _end){
+			erase_after(_bef_beg, _end);
+		}
+		// if sl is longer than this, alloc new node
+		if (first != last){
+			insert_after(_bef_beg, first, last);
+		}
 	}
-
-	template<typename _FwdIt>
-	iterator insert_after(_FwdIt pos, size_type n, const T& elem)
-	{
-		while (n > 0){
-			pos = insert_after(pos, elem);
+	void assign(size_type n, const value_type& elem){
+		iterator _bef_beg = before_begin();
+		iterator _beg = begin();
+		iterator _end = end();
+		while (_beg != _end && n > 0){
+			*_beg = elem;
+			++_beg;
+			++_bef_beg;
 			--n;
 		}
-		return pos;
+		if (n > 0){
+			insert_after(_bef_beg, n, elem);
+		}
+		if (_beg != _end){
+			erase_after(_bef_beg, _end);
+		}
 	}
-	/*
-	template<typename _FwdIt1, typename _FwdIt2>
-	iterator insert_after(_FwdIt1 pos, _FwdIt2 first, _FwdIt2 last)
-	{
-		return insert_range(pos, first, last);
+	void assign(std::initializer_list<T> init_list){
+		assign(init_list.begin(), init_list.end());
 	}
-	*/
-	template<typename _FwdIt>
-	iterator insert_after(_FwdIt pos, std::initializer_list<T> init_list)
-	{
-		return insert_range(pos, init_list.begin(), init_list.end());
+	
+	// ignore head node
+	bool operator==(const SingleList& sl) const {
+		const_iterator _beg = begin();
+		const_iterator _end = end();
+		const_iterator _first = sl.begin();
+		const_iterator _last = sl.end();
+		while (_beg != _end && _first != _last){
+			if (*_beg != *_first)
+				return false;
+			++_beg;
+			++_first;
+		}
+		return _beg == _first;
+	}
+	bool operator!=(const SingleList& sl)const {
+		return (!(*this == sl));
+	}
+	bool operator<(const SingleList& sl) const {
+		const_iterator _beg = begin();
+		const_iterator _end = end();
+		const_iterator _first = sl.begin();
+		const_iterator _last = sl.end();
+		while (_beg != _end && _first != _last){
+			if (*_beg < *_first)
+				return true;
+			else if (*_beg > *_first)
+				return false;
+			else{
+				++_beg;
+				++_first;
+			}
+		}
+		// if this is longer than sl
+		if (_beg != _end)
+			return false;
+		// if this == sl
+		if (_beg == _end && _first == _last)
+			return false;
+		return true;
+	}
+	bool operator>(const SingleList& sl) const{
+		return sl < *this;
+	}
+	bool operator<=(const SingleList& sl) const{
+		return (!(*this > sl));
+	}
+	bool operator>=(const SingleList& sl) const{
+		return (!(*this < sl));
+	}
+	bool empty(){ // not include head node
+		return begin() == end();
 	}
 
-	template<typename _FwdIt>
-	void erase_after(_FwdIt pos){
+	reference front(){
+		return *(begin());
+	}
+	const_reference front() const{
+		return *(begin());
+	}
+	void push_front(const value_type& elem){
+		insert_after(before_begin(), elem);
+	}
+	
+	iterator insert_after(const_iterator pos, const value_type& elem)
+	{
+		_insert_after(pos, elem);
+		return iterator(++pos.node);
+	}
+	iterator insert_after(const_iterator pos, size_type n, const value_type& val)
+	{
+		for (; 0 < n; --n, ++pos){
+			_insert_after(pos, val);
+		}
+		return iterator(pos.node);
+	}
+	template<typename _Iter = std::enable_if<_Is_Iterator<_Iter>::value, void>::type>
+	iterator insert_after(const_iterator pos, _Iter first, _Iter last)
+	{
+		for (; pos != end() && first != last; ++first, ++pos)
+			_insert_after(pos, *first);
+		return iterator(pos.node);
+	}
+	iterator insert_after(const_iterator pos, std::initializer_list<T> init_list){
+		return insert_after(pos, init_list.begin(), init_list.end());
+	}
+
+	void pop_front(){
+		link_type temp = begin().node;
+		head->__next = temp->__next;
+		delete temp;
+	}
+	void remove(const value_type& val){
+		iterator _bef_beg = before_begin();
+		iterator _beg = begin();
+		iterator _end = end();
+		while (_beg != _end){
+			if (*_beg == val){
+				link_type temp = _beg.node;
+				_bef_beg.node->__next = temp->__next;
+				++_beg;
+				delete temp;
+			}
+			else{
+				++_beg;
+				++_bef_beg;
+			}
+			
+		}
+	}
+	
+	template<typename _Pr>
+	void remove_if(_Pr Pred){
+		iterator _bef_beg = before_begin();
+		iterator _beg = begin();
+		iterator _end = end();
+		while (_beg != _end){
+			if (Pred(*_beg)){
+				link_type temp = _beg.node;
+				_bef_beg.node->__next = temp->__next;
+				++_beg;
+				delete temp;
+			}
+			else{
+				++_beg;
+				++_bef_beg;
+			}
+		}
+	}
+
+	void unique(){
+		iterator _i = begin();
+		iterator _e = end();
+		for (; _i != _e;){
+			iterator _j = _i;
+			++_j;
+			// loop to find first pair<i, j> not equal.
+			for (; _j != _e && *_i == *_j; ++_j);
+			// if i is not adjacent with j, erase duplicate elem.
+			if (_i.node->__next != _j.node)
+				erase_after(_i, _j);
+			_i = _j;
+		}
+	}
+
+	template<typename _Pr>
+	void unique(_Pr Pred){
+		iterator _i = begin();
+		iterator _e = end();
+		for (; _i != _e;){
+			iterator _j = _i;
+			++_j;
+			// loop to find first pair<i, j> not equal.
+			for (; _j != _e && Pred(*_i, *_j); ++_j);
+			// if i is not adjacent with j, erase duplicate elem.
+			if (_i.node->__next != _j.node)
+				erase_after(_i, _j);
+			_i = _j;
+		}
+	}
+
+	void splice_after(const_iterator pos, SingleList& sl, const_iterator pos2){
+		// assume pos and pos2 != end
+		/*if(pos2 == sl.end() || next(pos2) == sl.end() || pos == end()*/
+		const_iterator _j = pos2;
+		++_j;
+		if (pos != pos2 && pos != _j){
+			// relink sl
+			pos2.node->__next = _j.node->__next;
+			// relink this
+			_j.node->__next = pos.node->__next;
+			pos.node->__next = _j.node;
+		}
+	}
+	void splice_after(const_iterator pos, SingleList& sl, const_iterator first2, const_iterator last2){
+		if (first2 != last2 && pos != first2){
+			// find the position before last2
+			const_iterator _bef_last2 = first2;
+			while (_bef_last2.node->__next != last2.node)
+				++_bef_last2;
+			// relink this
+			_bef_last2.node->__next = pos.node->__next;
+			pos.node->__next = first2.node->__next;
+			// relink sl
+			first2.node->__next = last2.node;
+		}
+	}
+	void splice_after(const_iterator pos, SingleList& sl){
+		if (!sl.empty()){
+			if (pos != end()){
+				// find last position in sl
+				const_iterator _bef_last2 = sl.begin();
+				for (; _bef_last2.node->__next != nullptr; ++_bef_last2);
+				// relink this
+				_bef_last2.node->__next = pos.node->__next;
+				pos.node->__next = sl.before_begin().node->__next;
+				// relink sl
+				sl.before_begin().node->__next = nullptr;
+			}
+		}
+	}
+
+	void reverse(){
+		if (empty()) return;
+		link_type prevNode = head->__next;
+		link_type revNode = prevNode->__next;
+		while (revNode != nullptr){
+			prevNode->__next = revNode->__next;
+			revNode->__next = head->__next;
+			head->__next = revNode;
+			revNode = prevNode->__next;
+		}
+	}
+	void erase_after(const_iterator pos){
 		erase_after(pos, end());
 	}
-	template<typename _FwdIt>
-	void erase_after(_FwdIt first, _FwdIt last)
+	void erase_after(const_iterator first, const_iterator last)
 	{
-		if (first != last){
-			_FwdIt temp = first;
-			_FwdIt pos = ++temp;
-			while (pos != last){
-				delete (pos++).node;
-			}
-			first.node->next = pos.node;
+		link_type f = first.node;
+		link_type p = f->__next;
+		link_type l = last.node;
+		while (p != l){
+			link_type temp = p->__next;
+			delete p;
+			p = temp;
+		}
+		f->__next = l;
+	}
+
+	iterator begin(){
+		return iterator(head->__next);
+	}
+	// for const SingleList to call
+	const_iterator begin() const{
+		return const_iterator(head->__next);
+	}
+	const_iterator cbegin() const{
+		return const_iterator(head->__next);
+	}
+	iterator end(){
+		return iterator(nullptr);
+	}
+	const_iterator end() const{
+		return const_iterator(nullptr);
+	}
+	const_iterator cend() const{
+		return const_iterator(nullptr);
+	}
+	iterator before_begin(){
+		return iterator(head);
+	}
+	const_iterator before_begin() const {
+		return const_iterator(head);
+	}
+	const_iterator cbefore_begin(){
+		return const_iterator(head);
+	}
+
+	void resize(size_type n){
+		resize(n, T());
+	}
+	void resize(size_type n, const value_type& val){
+		iterator _bef_beg = before_begin();
+		iterator _beg = begin();
+		iterator _end = end();
+		for (; n > 0 && _beg != _end; --n, ++_beg, ++_bef_beg);
+		// if n > length, insert.
+		if (n > 0){
+			insert_after(_bef_beg, n, T(val));
+		}
+		// if n < length, erase.
+		if (_beg != _end){
+			erase_after(_bef_beg);
 		}
 	}
-
-	void remove(const T& val){
-		if (head != nullptr){
-			link_type p = head;
-			while (p->next != nullptr){
-				if (p->next->data == val){
-					link_type temp = p->next;
-					p -> next = p->next->next;
-					delete temp;
-				}
-				else
-					p = p->next; // no else will result in one val left
-			}
-		}
-	}
-	template<typename _Pr>
-	void remove_if(_Pr _Pred){
-
-	}
-
-	void resize(size_type n)
-	{
-		_resize(n, T());
-	}
-
-	void resize(size_type n, const T& val)
-	{
-		_resize(n, val);
-	}
-
 	void clear(){
 		if (head != nullptr){
-			link_type p = head->next;
+			link_type p = head->__next;
 			while (p != nullptr){
-				link_type temp = p->next;
+				link_type temp = p->__next;
 				delete p;
 				p = temp;
 			}
@@ -353,32 +498,17 @@ public:
 		}
 	}
 
-	iterator before_begin(){
-		return iterator(head);
-	}
-
-	iterator begin(){
-		return iterator(head->next);
-	}
-
-	iterator end(){
-		return iterator(nullptr);
-	}
-
-
-	// destructor
 	~SingleList(){
 		clear();
 	}
-
 	// traversal
 	friend std::ostream& operator<<(std::ostream& os, const my_type& l){
-		link_type p = l.head->next;
-		while (p != nullptr){
-			os << p->data << " ";
-			p = p->next;
+		const_iterator iter = l.begin();
+		while (iter != l.end()){
+			os << *iter << " ";
+			++iter;
 		}
-		return os << endl;
+		return os;
 	}
 
 protected:
@@ -387,92 +517,16 @@ protected:
 	// reuse code when define constructor
 	void empty_init(){
 		head = new __single_list_node<T>;
-		head->next = nullptr;
+		head->__next = nullptr;
 	}
-	template<typename _FwdIt>
-	void init_n(_FwdIt first, size_type n, const T& value){
-		link_type p = first.node;
-		while (n-- > 0){
-			link_type temp = new __single_list_node<T>;
-			temp->data = value;
-			temp->next = nullptr;
-			p->next = temp;
-			p = p->next;
-		}
-	}
-	template<typename _FwdIt>
-	void init_range(_FwdIt first, _FwdIt last)
-	{
-		empty_init();
-		link_type p = head;
-		for (; first != last; ++first){
-			link_type temp = new __single_list_node < T >;
-			temp->data = *first;
-			temp->next = nullptr;
-			p->next = temp;
-			p = p->next;
-		}
+
+	void _insert_after(const_iterator pos, const value_type& elem){
+		link_type temp = new __single_list_node < T >;
+		temp->__data = elem;
+		temp->__next = pos.node->__next;
+		pos.node->__next = temp;
 	}
 	
-	template<typename _FwdIt>
-	SingleList& assign_range(_FwdIt first, _FwdIt last)
-	{
-		link_type p1 = head;
-		// just copy data
-		while (p1->next != nullptr && first != last){
-			p1->next->data = *first;
-			p1 = p1->next;
-			++first;
-		}
-		// if sl1 is longer than sl2, delete left
-		if (p1->next != nullptr){
-			link_type p = p1->next;
-			while (p != nullptr){
-				link_type temp = p->next;
-				delete p;
-				p = temp;
-			}
-			p1->next = nullptr;
-		}
-		// if sl2 is longer than sl1, alloc new memory for sl1
-		while (first != last){
-			link_type temp = new __single_list_node < T > ;
-			temp->data = *(first++);
-			temp->next = nullptr;
-			p1->next = temp;
-			p1 = p1->next;
-		}
-		return *this;
-	}
-
-	template<typename _FwdIt1, typename _FwdIt2>
-	iterator insert_range(_FwdIt1 pos, _FwdIt2 first, _FwdIt2 last)
-	{
-		while (first != last){
-			pos = insert_after(pos, *first);
-			++first;
-		}
-		return pos;
-	}
-
-	void _resize(size_type n, const T& val)
-	{
-		if (head == nullptr)
-			init_n(before_begin(), n, val);
-		else{
-			link_type p = head;
-			while (p->next != nullptr && n > 0){
-				p = p->next;
-				--n;
-			}
-			while (p->next != nullptr){
-				erase_after(iterator(p));
-			}
-			if (n > 0){
-				init_n(iterator(p), n, val);
-			}
-		}
-	}
 };
 
 #endif
