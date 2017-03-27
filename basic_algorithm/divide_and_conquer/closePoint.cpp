@@ -10,7 +10,7 @@ float dist(Point p1, Point p2){
 
 // bruse force
 // O(n^2)
-float bruse_closeUtil(int *p, int size)
+float bruse_closeUtil(Point *p, int size)
 {
 	float min_distance = std::numeric_limits<float>::max();
 	for(int i = 0; i < size; i++)
@@ -23,7 +23,7 @@ float bruse_closeUtil(int *p, int size)
 
 // divide and conquer
 
-float stripClosest(int *strip, int size, float d)
+float stripClosest(Point *strip, int size, float d)
 {
 	// sort p[] with Point.y;
 	sort(strip, size, sizeof(Point), compareY);         //O(logN)
@@ -40,7 +40,7 @@ float stripClosest(int *strip, int size, float d)
 
 // assume that p[] is sorted with Point.x;
 // O(n * logn * logn)
-float closeUtil(int *p, int size){
+float closeUtil(Point *p, int size){
 	
 	if(size <= 3)                      // base case.
 		bruse_closeUtil(p, size);
